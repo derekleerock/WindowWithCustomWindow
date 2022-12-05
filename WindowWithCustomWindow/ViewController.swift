@@ -1,16 +1,10 @@
 import UIKit
 
 class ViewController: UIViewController {
-
-    // UIWindow needs to be a strong reference:
+    // UIWindow needs to be a strong reference
     private var maybeOverlayWindow: UIWindow? = nil
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view.
-    }
-
-
+    // Displaying a modal window is included because I want to confirm that if a new window is displayed, that it can be displayed on top of all view controllers, even those that are presented modally on top of another.
     @IBAction func didTapNewModal(_ sender: UIButton) {
         debugPrint(#function)
 
@@ -28,41 +22,13 @@ class ViewController: UIViewController {
     @IBAction func didTapShowWindow(_ sender: UIButton) {
         debugPrint(#function)
 
-        // Tried and didn't work
-//        let vc = UIViewController()
-//        vc.title = "New Window VC"
-//        vc.view.backgroundColor = .blue
-
-//        let newWindow = UIWindow(frame: CGRect(x: 0.0, y: 0.0, width: 200.0, height: 100.0))
-//        newWindow.rootViewController = vc
-//        newWindow.windowLevel = .alert
-
-
-        // .......
-
-
-//        UIApplication.shared.windows.append(newWindow)
-
-
-        // .......
-
-
-        // "To create a scene programmatically, call the requestSceneSessionActivation(_:userActivity:options:errorHandler:) method of UIApplication."
-//        let newScene = UIApplication.shared.requestSceneSessionActivation(nil, userActivity: nil, options: nil)
-//        newScene
-
-
-        // .......
-
-
-        // The following approach seems to be working for me:
-
+        // If the new window has already been created, simply make sure it is displayed.
         if let overlayWindow = maybeOverlayWindow {
             overlayWindow.isHidden = false
             return
         }
 
-        // Create custom UIView:
+        // Create custom UIView (I suppose this could be a new UIViewController as well)
         let myCustomView = UIView(frame: CGRect(x: 50.0, y: 50.0, width: UIScreen.main.bounds.width - 100.0, height: 100.0))
         myCustomView.backgroundColor = .blue
 
@@ -72,30 +38,27 @@ class ViewController: UIViewController {
         }
 
         // Important! Need to set both the bounds and the frame of the UIWindow:
-        maybeOverlayWindow?.bounds = CGRect(
+        let newWindowPosition = CGRect(
             x: 0.0,
             y: 0.0,
             width: UIScreen.main.bounds.width,
             height: 100.0
         )
-        maybeOverlayWindow?.frame = maybeOverlayWindow?.bounds ?? .zero
+        maybeOverlayWindow?.bounds = newWindowPosition
+        maybeOverlayWindow?.frame = newWindowPosition
 
-        // WindowLevel determines where the window is placed in the hierarchy; alert should be on top of all other windows
+        // WindowLevel determines where the window is placed in the hierarchy; alert is expected to be displayed on top of all other windows
         maybeOverlayWindow?.windowLevel = UIWindow.Level.alert
 
-        // UIWindow configuration....
+        // Setting the background color of the window helps to confirm the position of exactly where it is being displayed.
         maybeOverlayWindow?.backgroundColor = UIColor(white: 0, alpha: 0.5)
 
-        // Add the custom subview (or root view controller) to the new window
+        // Add the custom subview (or root view controller) to the new window:
         maybeOverlayWindow?.addSubview(myCustomView)
-        //overlayWindow.rootViewController = UIViewController()//your controller or navController
 
-        // Seems like I don't have to make it key - I can hust make it visible and it is displayed.
+        // Simply making the new window visible appears to display it.
+        // (Some information online indicated that it was necessary to call .makeKeyAndVisible(), but this does not appear to be necessary.
         maybeOverlayWindow?.isHidden = false
-
-        // Not sure why this needs to be key. Does this make the other window not key? Setting 'isHidden = false' seems to be sufficient for this.
-//        overlayWindow.makeKeyAndVisible()
-
     }
 
     @IBAction func didTapHideWindow(_ sender: UIButton) {
