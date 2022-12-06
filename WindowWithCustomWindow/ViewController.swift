@@ -1,6 +1,8 @@
 import UIKit
 
 final class OverlayView: UIView {
+    private var button: UIButton!
+
     override init(frame: CGRect) {
         super.init(frame: frame)
 
@@ -11,11 +13,31 @@ final class OverlayView: UIView {
         layer.zPosition = CGFloat.greatestFiniteMagnitude
 
         // A solid color helps to illustrate that this view is displayed on top of all others.
-        backgroundColor = .systemCyan
+        backgroundColor = .systemYellow
+
+        // Add button on top of view which should receive interaction events.
+        button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Perform Some Action", for: .normal)
+        button.addTarget(
+            self,
+            action: #selector(didTapButton),
+            for: .touchUpInside
+        )
+        addSubview(button)
+
+        NSLayoutConstraint.activate([
+            button.centerXAnchor.constraint(equalTo: button.superview!.centerXAnchor),
+            button.centerYAnchor.constraint(equalTo: button.superview!.centerYAnchor)
+        ])
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    @objc func didTapButton(sender: UIButton) {
+        debugPrint(#function)
     }
 }
 
