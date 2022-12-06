@@ -41,21 +41,30 @@ final class OverlayView: UIView {
     }
 }
 
-class ViewController: UIViewController {
+final class ModalViewController: UIViewController {
+    init() {
+        super.init(nibName: nil, bundle: nil)
+
+        title = "Modal VC"
+        view.backgroundColor = .systemOrange.withAlphaComponent(0.8)
+        modalTransitionStyle = .coverVertical
+        modalPresentationStyle = .overFullScreen
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+final class ViewController: UIViewController {
     private var maybeMyCustomView: UIView? = nil
 
     // Displaying a modal window is included because I want to confirm that if a new window is displayed, that it can be displayed on top of all view controllers, even those that are presented modally on top of another.
     @IBAction func didTapNewModal(_ sender: UIButton) {
         debugPrint(#function)
 
-        let vc = UIViewController()
-        vc.title = "Modal VC"
-        vc.view.backgroundColor = .systemOrange.withAlphaComponent(0.8)
-        vc.modalTransitionStyle = .coverVertical
-        vc.modalPresentationStyle = .overFullScreen
-
+        let vc = ModalViewController()
         let nav = UINavigationController(rootViewController: vc)
-
         present(nav, animated: true, completion: nil)
     }
 
