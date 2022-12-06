@@ -51,8 +51,6 @@ final class CustomNavigationBar: UINavigationBar {
 
     // This method fires both when tapping inside the navigation bar, as well as tapping inside the main view (which I think is unexpected, but this appears to be how this is functioning)
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        debugPrint("CustomNavigationBar.hitTest(_ point: \(point), with event: \(String(describing: event))")
-
         // Get a (weak) reference to the overlay view and hold onto it to allow us to perform a hit test against this view.
         if maybeOverlayView == nil {
             if
@@ -69,9 +67,6 @@ final class CustomNavigationBar: UINavigationBar {
         {
             let pointLocationInOverlayView = convert(point, to: overlayView)
             let pointIsInsideOverlayView = overlayView.point(inside: pointLocationInOverlayView, with: event)
-
-            debugPrint(" >>> pointLocationInOverlayView: \(pointLocationInOverlayView)")
-            debugPrint(" >>>   pointIsInsideOverlayView: \(pointIsInsideOverlayView)")
 
             if pointIsInsideOverlayView {
                 return overlayView.hitTest(pointLocationInOverlayView, with: event)
