@@ -1,6 +1,10 @@
 import UIKit
 
 final class OverlayView: UIView {
+    struct Constants {
+        static let viewTagId = Int.max
+    }
+
     private var button: UIButton!
 
     override init(frame: CGRect) {
@@ -16,7 +20,7 @@ final class OverlayView: UIView {
         backgroundColor = .systemYellow
 
         // Tag this view to allow us to find it more easily when we need to perform a hit test.
-        tag = Int.max
+        tag = Constants.viewTagId
 
         // Add button on top of view which should receive interaction events.
         button = UIButton(type: .system)
@@ -57,7 +61,7 @@ final class CustomNavigationBar: UINavigationBar {
                 let firstWindowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                 let firstWindow = firstWindowScene.windows.first(where: { $0.isKeyWindow })
             {
-                maybeOverlayView = firstWindow.viewWithTag(Int.max) as? OverlayView
+                maybeOverlayView = firstWindow.viewWithTag(OverlayView.Constants.viewTagId) as? OverlayView
             }
         }
 
