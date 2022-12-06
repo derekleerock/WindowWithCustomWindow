@@ -1,8 +1,26 @@
 import UIKit
 
+final class OverlayView: UIView {
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        // Explicity need to set this in order for AutoLayout to function properly.
+        translatesAutoresizingMaskIntoConstraints = false
+
+        // Set the zPosition to the highest possible value to ensure it is on top of all other views.
+        layer.zPosition = CGFloat.greatestFiniteMagnitude
+
+        // A solid color helps to illustrate that this view is displayed on top of all others.
+        backgroundColor = .systemCyan
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
 class ViewController: UIViewController {
-    // UIWindow needs to be a strong reference
-    private var maybeOverlayWindow: UIWindow? = nil
+    private var maybeMyCustomView: UIView? = nil
 
     // Displaying a modal window is included because I want to confirm that if a new window is displayed, that it can be displayed on top of all view controllers, even those that are presented modally on top of another.
     @IBAction func didTapNewModal(_ sender: UIButton) {
@@ -22,48 +40,35 @@ class ViewController: UIViewController {
     @IBAction func didTapShowWindow(_ sender: UIButton) {
         debugPrint(#function)
 
-        // If the new window has already been created, simply make sure it is displayed.
-        if let overlayWindow = maybeOverlayWindow {
-            overlayWindow.isHidden = false
+        // If the new view has already been created, simply make sure it is visible.
+        if let myCustomView = maybeMyCustomView {
+            myCustomView.isHidden = false
             return
         }
 
-        // Create custom UIView (I suppose this could be a new UIViewController as well)
-        let myCustomView = UIView(frame: CGRect(x: 50.0, y: 50.0, width: UIScreen.main.bounds.width - 100.0, height: 100.0))
-        myCustomView.backgroundColor = .blue
+        // Create custom UIView to be the overlay view. AutoLayout will determine the
+        //      position and size.
+        maybeMyCustomView = OverlayView(frame: .zero)
 
-        // Get the current window scene to create a new UIWindow using it:
-        if let currentWindowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-            maybeOverlayWindow = UIWindow(windowScene: currentWindowScene)
+        if
+            let firstWindowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let firstWindow = firstWindowScene.windows.first(where: { $0.isKeyWindow })
+        {
+            // Add the view directly to the key window as a subview
+            firstWindow.addSubview(maybeMyCustomView!)
+
+            NSLayoutConstraint.activate([
+                maybeMyCustomView!.topAnchor.constraint(equalTo: maybeMyCustomView!.superview!.safeAreaLayoutGuide.topAnchor, constant: 0.0),
+                maybeMyCustomView!.leadingAnchor.constraint(equalTo: maybeMyCustomView!.superview!.leadingAnchor, constant: 0.0),
+                maybeMyCustomView!.trailingAnchor.constraint(equalTo: maybeMyCustomView!.superview!.trailingAnchor, constant: 0.0),
+                maybeMyCustomView!.heightAnchor.constraint(equalToConstant: 100.0)
+            ])
         }
-
-        // Important! Need to set both the bounds and the frame of the UIWindow:
-        let newWindowPosition = CGRect(
-            x: 0.0,
-            y: 0.0,
-            width: UIScreen.main.bounds.width,
-            height: 100.0
-        )
-        maybeOverlayWindow?.bounds = newWindowPosition
-        maybeOverlayWindow?.frame = newWindowPosition
-
-        // WindowLevel determines where the window is placed in the hierarchy; alert is expected to be displayed on top of all other windows
-        maybeOverlayWindow?.windowLevel = UIWindow.Level.alert
-
-        // Setting the background color of the window helps to confirm the position of exactly where it is being displayed.
-        maybeOverlayWindow?.backgroundColor = UIColor(white: 0, alpha: 0.5)
-
-        // Add the custom subview (or root view controller) to the new window:
-        maybeOverlayWindow?.addSubview(myCustomView)
-
-        // Simply making the new window visible appears to display it.
-        // (Some information online indicated that it was necessary to call .makeKeyAndVisible(), but this does not appear to be necessary.
-        maybeOverlayWindow?.isHidden = false
     }
 
     @IBAction func didTapHideWindow(_ sender: UIButton) {
         debugPrint(#function)
 
-        maybeOverlayWindow?.isHidden = true
+        maybeMyCustomView?.isHidden = true
     }
 }
