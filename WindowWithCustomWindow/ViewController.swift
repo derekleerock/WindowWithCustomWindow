@@ -15,6 +15,9 @@ final class OverlayView: UIView {
         // A solid color helps to illustrate that this view is displayed on top of all others.
         backgroundColor = .systemYellow
 
+        // Tag this view to allow us to find it more easily when we need to perform a hit test.
+        tag = Int.max
+
         // Add button on top of view which should receive interaction events.
         button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -26,9 +29,11 @@ final class OverlayView: UIView {
         )
         addSubview(button)
 
+        // Purposely pin the button to the top of the overlay view to confirm that touch events are received.
+        // NOTE: If the modal view controller is not presented using "full screen", then the top-most part of that presented view controller will not receive these touch events.
         NSLayoutConstraint.activate([
+            button.topAnchor.constraint(equalTo: button.superview!.topAnchor),
             button.centerXAnchor.constraint(equalTo: button.superview!.centerXAnchor),
-            button.centerYAnchor.constraint(equalTo: button.superview!.centerYAnchor)
         ])
     }
 
@@ -41,14 +46,62 @@ final class OverlayView: UIView {
     }
 }
 
+final class CustomNavigationBar: UINavigationBar {
+    private weak var maybeOverlayView: OverlayView? = nil
+
+    // This method fires both when tapping inside the navigation bar, as well as tapping inside the main view (which I think is unexpected, but this appears to be how this is functioning)
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        debugPrint("CustomNavigationBar.hitTest(_ point: \(point), with event: \(String(describing: event))")
+
+        // Get a (weak) reference to the overlay view and hold onto it to allow us to perform a hit test against this view.
+        if maybeOverlayView == nil {
+            if
+                let firstWindowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                let firstWindow = firstWindowScene.windows.first(where: { $0.isKeyWindow })
+            {
+                maybeOverlayView = firstWindow.viewWithTag(Int.max) as? OverlayView
+            }
+        }
+
+        if
+            let overlayView = maybeOverlayView,
+            overlayView.isHidden == false
+        {
+            let pointLocationInOverlayView = convert(point, to: overlayView)
+            let pointIsInsideOverlayView = overlayView.point(inside: pointLocationInOverlayView, with: event)
+
+            debugPrint(" >>> pointLocationInOverlayView: \(pointLocationInOverlayView)")
+            debugPrint(" >>>   pointIsInsideOverlayView: \(pointIsInsideOverlayView)")
+
+            if pointIsInsideOverlayView {
+                return overlayView.hitTest(pointLocationInOverlayView, with: event)
+            }
+        }
+
+        return super.hitTest(point, with: event)
+    }
+}
+
+final class CustomNavigationController: UINavigationController {
+    override init(rootViewController: UIViewController) {
+        super.init(navigationBarClass: CustomNavigationBar.self, toolbarClass: nil)
+
+        modalPresentationStyle = .fullScreen
+        viewControllers = [rootViewController]
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
 final class ModalViewController: UIViewController {
     init() {
         super.init(nibName: nil, bundle: nil)
 
         title = "Modal VC"
-        view.backgroundColor = .systemOrange.withAlphaComponent(0.8)
+        view.backgroundColor = .systemOrange
         modalTransitionStyle = .coverVertical
-        modalPresentationStyle = .overFullScreen
     }
 
     required init?(coder: NSCoder) {
@@ -64,7 +117,16 @@ final class ViewController: UIViewController {
         debugPrint(#function)
 
         let vc = ModalViewController()
-        let nav = UINavigationController(rootViewController: vc)
+        let nav = CustomNavigationController(rootViewController: vc)
+
+        let closeBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .close,
+            target: self,
+            action: #selector(didTapCloseBarButtonItem)
+        )
+        closeBarButtonItem.tintColor = UIColor.black
+        vc.navigationItem.setRightBarButton(closeBarButtonItem, animated: true)
+
         present(nav, animated: true, completion: nil)
     }
 
@@ -90,8 +152,8 @@ final class ViewController: UIViewController {
 
             NSLayoutConstraint.activate([
                 maybeMyCustomView!.topAnchor.constraint(equalTo: maybeMyCustomView!.superview!.safeAreaLayoutGuide.topAnchor, constant: 0.0),
-                maybeMyCustomView!.leadingAnchor.constraint(equalTo: maybeMyCustomView!.superview!.leadingAnchor, constant: 0.0),
-                maybeMyCustomView!.trailingAnchor.constraint(equalTo: maybeMyCustomView!.superview!.trailingAnchor, constant: 0.0),
+                maybeMyCustomView!.leadingAnchor.constraint(equalTo: maybeMyCustomView!.superview!.safeAreaLayoutGuide.leadingAnchor, constant: 60.0),
+                maybeMyCustomView!.trailingAnchor.constraint(equalTo: maybeMyCustomView!.superview!.safeAreaLayoutGuide.trailingAnchor, constant: -60.0),
                 maybeMyCustomView!.heightAnchor.constraint(equalToConstant: 100.0)
             ])
         }
@@ -101,5 +163,9 @@ final class ViewController: UIViewController {
         debugPrint(#function)
 
         maybeMyCustomView?.isHidden = true
+    }
+
+    @objc func didTapCloseBarButtonItem(sender: UIBarButtonItem) {
+        presentedViewController?.dismiss(animated: true)
     }
 }
